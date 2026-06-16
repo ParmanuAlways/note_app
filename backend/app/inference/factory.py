@@ -27,6 +27,10 @@ def build_extraction_client(settings: Settings) -> ExtractionClient | None:
         from app.inference.mock import MockExtractionClient
 
         return MockExtractionClient(cfg)
+    if cfg.engine == "ollama":
+        from app.inference.ollama_vl import OllamaVisionExtractionClient
+
+        return OllamaVisionExtractionClient(cfg)
     return OpenAIVisionExtractionClient(cfg)
 
 
