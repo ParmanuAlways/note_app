@@ -8,6 +8,7 @@ import type { EventClickArg, DatesSetArg } from "@fullcalendar/core";
 import TasksPanel from "./TasksPanel";
 import DocumentsPanel from "./DocumentsPanel";
 import NotesPanel from "./NotesPanel";
+import TrashModal from "./TrashModal";
 import Modal from "./Modal";
 import {
   getStatus,
@@ -163,6 +164,8 @@ export default function App() {
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [toDelete, setToDelete] = useState<ClickedOcc | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
+  const [sidebarKey, setSidebarKey] = useState(0); // bump to remount panels
 
   const reload = (r = range) => {
     if (!r) return;
@@ -184,6 +187,7 @@ export default function App() {
         <h1 style={{ fontSize: 20, margin: 0 }}>AI Notes &amp; Scheduler</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <StatusBadge />
+          <button onClick={() => setShowTrash(true)}>🗑 Trash</button>
           <button onClick={() => setForm({ ...EMPTY })}>+ New event</button>
         </div>
       </header>
@@ -208,7 +212,7 @@ export default function App() {
             }))}
           />
         </div>
-        <div style={{ width: 300, flexShrink: 0 }}>
+        <div style={{ width: 300, flexShrink: 0 }} key={sidebarKey}>
           <DocumentsPanel />
           <NotesPanel />
           <TasksPanel />
@@ -217,6 +221,7 @@ export default function App() {
 
       {form && <NewEventForm initial={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); reload(); }} />}
       {toDelete && <DeleteDialog occ={toDelete} onClose={() => setToDelete(null)} onDone={() => { setToDelete(null); reload(); }} />}
+      {showTrash && <TrashModal onClose={() => setShowTrash(false)} onRestored={() => { reload(); setSidebarKey((k) => k + 1); }} />}
     </div>
   );
 }

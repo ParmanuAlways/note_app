@@ -59,6 +59,24 @@ export async function createEvent(input: EventInput): Promise<unknown> {
   return res.json();
 }
 
+export interface TrashItem {
+  type: "event" | "task" | "note" | "document";
+  id: string;
+  title: string;
+  deleted_at: string;
+}
+
+export async function listTrash(): Promise<TrashItem[]> {
+  const res = await fetch(`${BASE}/trash`);
+  if (!res.ok) throw new Error(`trash ${res.status}`);
+  return res.json();
+}
+
+export async function restoreItem(type: TrashItem["type"], id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${type}s/${id}/restore`, { method: "POST" });
+  if (!res.ok) throw new Error(`restore failed ${res.status}`);
+}
+
 export interface NoteMeta {
   id: string;
   title: string;
