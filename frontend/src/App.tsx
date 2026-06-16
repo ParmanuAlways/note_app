@@ -7,6 +7,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg, DatesSetArg } from "@fullcalendar/core";
 import TasksPanel from "./TasksPanel";
 import DocumentsPanel from "./DocumentsPanel";
+import NotesPanel from "./NotesPanel";
+import Modal from "./Modal";
 import {
   getStatus,
   listEvents,
@@ -152,19 +154,6 @@ function DeleteDialog({ occ, onDone, onClose }: { occ: ClickedOcc; onDone: () =>
   );
 }
 
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={onClose}
-    >
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", padding: 20, borderRadius: 8, width: 360 }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 // FullCalendar gives "2026-06-01" or "2026-06-01T..[+offset]"; storage is naive
 // single-zone (v1), so strip any offset to a plain local timestamp.
 const naive = (s: string) => (s.includes("T") ? s.slice(0, 19) : `${s}T00:00:00`);
@@ -221,6 +210,7 @@ export default function App() {
         </div>
         <div style={{ width: 300, flexShrink: 0 }}>
           <DocumentsPanel />
+          <NotesPanel />
           <TasksPanel />
         </div>
       </div>

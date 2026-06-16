@@ -59,6 +59,65 @@ export async function createEvent(input: EventInput): Promise<unknown> {
   return res.json();
 }
 
+export interface NoteMeta {
+  id: string;
+  title: string;
+  classification: string | null;
+  created_at: string;
+  updated_at: string;
+  content: string;
+}
+
+export interface NoteVersion {
+  sha: string;
+  message: string;
+  at: string;
+}
+
+export async function listNotes(): Promise<NoteMeta[]> {
+  const res = await fetch(`${BASE}/notes`);
+  if (!res.ok) throw new Error(`notes ${res.status}`);
+  return res.json();
+}
+
+export async function getNote(id: string): Promise<NoteMeta> {
+  const res = await fetch(`${BASE}/notes/${id}`);
+  if (!res.ok) throw new Error(`note ${res.status}`);
+  return res.json();
+}
+
+export async function createNote(input: { title: string; content: string }): Promise<NoteMeta> {
+  const res = await fetch(`${BASE}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`create note failed ${res.status}`);
+  return res.json();
+}
+
+export async function updateNote(id: string, input: { title?: string; content?: string }): Promise<NoteMeta> {
+  const res = await fetch(`${BASE}/notes/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`update note failed ${res.status}`);
+  return res.json();
+}
+
+export async function listNoteVersions(id: string): Promise<NoteVersion[]> {
+  const res = await fetch(`${BASE}/notes/${id}/versions`);
+  if (!res.ok) throw new Error(`versions ${res.status}`);
+  return res.json();
+}
+
+export async function getNoteVersion(id: string, sha: string): Promise<{ sha: string; content: string }> {
+  const res = await fetch(`${BASE}/notes/${id}/versions/${sha}`);
+  if (!res.ok) throw new Error(`version ${res.status}`);
+  return res.json();
+}
+
 export interface UploadItem {
   filename: string;
   status: "uploaded" | "duplicate" | "rejected";
