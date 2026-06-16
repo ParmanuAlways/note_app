@@ -1,0 +1,85 @@
+# ============================================================================
+#  AI Notes & Scheduler — full stack.
+#  Build on the internet PC, then `docker save` the images + copy ./models to
+#  the air-gapped host (see README). Model services run with HF_HUB_OFFLINE=1
+#  so they NEVER reach out at runtime (NFR-3 / AC-21).
+# ============================================================================
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-notes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-prod}
+      POSTGRES_DB: ${POSTGRES_DB:-notes}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev"]   # v1 dev mode; prod hardening is a deployment task
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    networks: [internal]
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+    volumes:
+      - storage:/data/storage
+    depends_on: [postgres]
+    networks: [internal]
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on: [backend]
+    networks: [internal]
+
+  # --- Model services (GPU). Weights live in ./models, mounted read-only. ---
+  vllm:
+    image: vllm/vllm-openai:v0.6.6
+    command: >
+      --model ${INFERENCE_EXTRACTION_MODEL:-Qwen/Qwen2.5-VL-7B-Instruct}
+      --port 8000
+    environment:
+      HF_HUB_OFFLINE: "1"        # never download at runtime (air-gap)
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - ./models:/root/.cache/huggingface:ro
+    networks: [internal]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - { driver: nvidia, count: all, capabilities: [gpu] }
+
+  whisperlive:
+    image: ghcr.io/collabora/whisperlive-gpu:latest   # pin a digest before export
+    environment:
+      HF_HUB_OFFLINE: "1"
+    volumes:
+      - ./models:/root/.cache/huggingface:ro
+    networks: [internal]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - { driver: nvidia, count: all, capabilities: [gpu] }
+
+volumes:
+  pgdata:
+  storage:
+
+# Internal-only network: services reach each other, nothing reaches the
+# internet. Only frontend (80) and keycloak (8080) are published to the host.
+networks:
+  internal:
+    driver: bridge
