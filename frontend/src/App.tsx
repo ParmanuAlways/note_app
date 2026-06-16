@@ -6,6 +6,7 @@ import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg, DatesSetArg } from "@fullcalendar/core";
 import TasksPanel from "./TasksPanel";
+import DocumentsPanel from "./DocumentsPanel";
 import {
   getStatus,
   listEvents,
@@ -218,7 +219,10 @@ export default function App() {
             }))}
           />
         </div>
-        <TasksPanel />
+        <div style={{ width: 300, flexShrink: 0 }}>
+          <DocumentsPanel />
+          <TasksPanel />
+        </div>
       </div>
 
       {form && <NewEventForm initial={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); reload(); }} />}

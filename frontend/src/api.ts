@@ -59,6 +59,43 @@ export async function createEvent(input: EventInput): Promise<unknown> {
   return res.json();
 }
 
+export interface UploadItem {
+  filename: string;
+  status: "uploaded" | "duplicate" | "rejected";
+  reason: string | null;
+  document_id: string | null;
+  duplicate_of: string | null;
+}
+
+export interface DocumentRecord {
+  id: string;
+  filename: string;
+  mime_type: string;
+  page_count: number;
+  reference_number: string | null;
+  classification: string | null;
+  created_at: string;
+}
+
+export async function uploadDocuments(files: File[], force = false): Promise<UploadItem[]> {
+  const fd = new FormData();
+  files.forEach((f) => fd.append("files", f));
+  const res = await fetch(`${BASE}/documents?force=${force}`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `upload failed ${res.status}`);
+  }
+  return (await res.json()).items;
+}
+
+export async function listDocuments(): Promise<DocumentRecord[]> {
+  const res = await fetch(`${BASE}/documents`);
+  if (!res.ok) throw new Error(`documents ${res.status}`);
+  return res.json();
+}
+
+export const documentFileUrl = (id: string) => `${BASE}/documents/${id}/file`;
+
 export interface Task {
   id: string;
   title: string;

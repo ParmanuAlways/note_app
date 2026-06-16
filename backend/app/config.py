@@ -53,6 +53,11 @@ class Settings(BaseSettings):
 
     storage_root: str = "/data/storage"
 
+    # Upload limits (FR-1) — configurable, enforced before acceptance so
+    # out-of-bounds files are rejected with a clear message, never a crash.
+    max_file_mb: int = 50
+    max_batch_files: int = 20
+
     # Optional full override (e.g. sqlite for local dev). When unset, the URL
     # is assembled from the postgres_* parts below (prod / compose).
     database_url_override: str | None = None

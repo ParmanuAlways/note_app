@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import logging
 
-from app.api import events, status, tasks
+from app.api import documents, events, status, tasks
 from app.config import get_settings
 from app.db.database import init_db
 from app.inference.factory import (
@@ -57,3 +57,4 @@ app.add_middleware(
 app.include_router(status.router)
 app.include_router(events.router)
 app.include_router(tasks.router)
+app.include_router(documents.router)
