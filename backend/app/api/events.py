@@ -5,7 +5,7 @@ This is the AI-free backbone: it works with no GPU and no models (NFR-9).
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -76,6 +76,29 @@ def list_trash(
         Event.owner_id == owner_id, Event.deleted_at.is_not(None)
     ).order_by(Event.deleted_at.desc())
     return list(db.scalars(stmt))
+
+
+@router.get("/conflicts", response_model=list[OccurrenceRead])
+def conflicts(
+    start: datetime,
+    end: datetime | None = None,
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_current_owner),
+) -> list[dict]:
+    # Overlap check for the confirm screen (FR-15). A missing end is treated as
+    # a 1-hour block. Recurring events are expanded over the surrounding window
+    # so a repeating occurrence on the proposed day is caught too.
+    proposed_end = end or (start + timedelta(hours=1))
+    win_lo, win_hi = start - timedelta(days=1), proposed_end + timedelta(days=1)
+    clashes: list[dict] = []
+    stmt = select(Event).where(Event.owner_id == owner_id, Event.deleted_at.is_(None))
+    for ev in db.scalars(stmt):
+        for occ in occurrences_in_range(ev, win_lo, win_hi):
+            occ_start = occ["occurrence_start"]
+            occ_end = occ["occurrence_end"] or (occ_start + timedelta(hours=1))
+            if occ_start < proposed_end and occ_end > start:  # intervals overlap
+                clashes.append(occ)
+    return clashes
 
 
 @router.get("/{event_id}", response_model=EventRead)

@@ -213,7 +213,7 @@ export default function App() {
           />
         </div>
         <div style={{ width: 300, flexShrink: 0 }} key={sidebarKey}>
-          <DocumentsPanel />
+          <DocumentsPanel onConfirmed={() => reload()} />
           <NotesPanel />
           <TasksPanel />
         </div>

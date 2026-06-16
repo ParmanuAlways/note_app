@@ -11,9 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_owner
 from app.db.database import get_db
-from app.db.models import Document, Extraction
+from app.db.models import Document, Event, Extraction, Task
 from app.inference.base import InferenceUnavailable
-from app.schemas.extraction import ExtractionRead
+from app.schemas.extraction import ConfirmRequest, ConfirmResponse, ExtractionRead
+from app.services import audit
 from app.services.extraction import run_extraction
 
 router = APIRouter(tags=["extractions"])
@@ -66,3 +67,56 @@ def get_extraction(
     if ext is None or ext.owner_id != owner_id:
         raise HTTPException(404, "extraction not found")
     return ext
+
+
+@router.post("/extractions/{extraction_id}/confirm", response_model=ConfirmResponse)
+def confirm_extraction(
+    extraction_id: str,
+    payload: ConfirmRequest,
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_current_owner),
+) -> ConfirmResponse:
+    # The confirm step (FR-14): nothing reaches the calendar until the user
+    # approves here. Dismiss (create=none) keeps the document, discards only
+    # the proposed item.
+    ext = db.get(Extraction, extraction_id)
+    if ext is None or ext.owner_id != owner_id:
+        raise HTTPException(404, "extraction not found")
+
+    if payload.edited_fields:
+        # Record the user's corrections back onto the extraction + audit them.
+        fields = {k: dict(v) for k, v in ext.fields.items()}
+        for key, value in payload.edited_fields.items():
+            if key in fields:
+                fields[key]["value"] = value
+        ext.fields = fields
+        audit.record(db, owner_id=owner_id, item_type="document", item_id=ext.document_id,
+                     action="extraction_edited", detail={"fields": sorted(payload.edited_fields)})
+
+    ext.confirmed = True
+    created_type: str | None = None
+    created_id: str | None = None
+
+    if payload.create == "event":
+        if payload.event is None:
+            raise HTTPException(400, "event details required when create=event")
+        ev = Event(owner_id=owner_id, source_document_id=ext.document_id, **payload.event.model_dump())
+        db.add(ev)
+        db.flush()
+        audit.record(db, owner_id=owner_id, item_type="event", item_id=ev.id,
+                     action="created", detail={"source": "extraction", "document_id": ext.document_id})
+        created_type, created_id = "event", ev.id
+    elif payload.create == "task":
+        if payload.task is None:
+            raise HTTPException(400, "task details required when create=task")
+        tk = Task(owner_id=owner_id, source_document_id=ext.document_id, **payload.task.model_dump())
+        db.add(tk)
+        db.flush()
+        audit.record(db, owner_id=owner_id, item_type="task", item_id=tk.id,
+                     action="created", detail={"source": "extraction", "document_id": ext.document_id})
+        created_type, created_id = "task", tk.id
+
+    audit.record(db, owner_id=owner_id, item_type="document", item_id=ext.document_id,
+                 action="confirmed", detail={"created": created_type})
+    db.commit()
+    return ConfirmResponse(confirmed=True, created_type=created_type, created_id=created_id)

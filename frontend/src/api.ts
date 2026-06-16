@@ -59,6 +59,58 @@ export async function createEvent(input: EventInput): Promise<unknown> {
   return res.json();
 }
 
+export interface ExtractionField {
+  value: string | null;
+  confidence: number;
+  source_text: string | null;
+  page: number | null;
+  flags: string[];
+}
+
+export interface Extraction {
+  id: string;
+  document_id: string;
+  version: number;
+  fields: Record<string, ExtractionField>;
+  model_used: string;
+  confirmed: boolean;
+  created_at: string;
+}
+
+export async function extractDocument(docId: string): Promise<Extraction> {
+  const res = await fetch(`${BASE}/documents/${docId}/extract`, { method: "POST" });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.detail || `extract failed ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface ConfirmRequest {
+  create: "event" | "task" | "none";
+  event?: { title: string; starts_at: string; ends_at?: string | null; venue?: string | null; attendees?: string | null };
+  task?: { title: string; due_at?: string | null; reply_by?: string | null };
+  edited_fields?: Record<string, string | null>;
+}
+
+export async function confirmExtraction(id: string, payload: ConfirmRequest): Promise<{ confirmed: boolean; created_type: string | null; created_id: string | null }> {
+  const res = await fetch(`${BASE}/extractions/${id}/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`confirm failed ${res.status}`);
+  return res.json();
+}
+
+export async function checkConflicts(start: string, end?: string): Promise<Occurrence[]> {
+  const q = new URLSearchParams({ start });
+  if (end) q.set("end", end);
+  const res = await fetch(`${BASE}/events/conflicts?${q}`);
+  if (!res.ok) throw new Error(`conflicts ${res.status}`);
+  return res.json();
+}
+
 export interface TrashItem {
   type: "event" | "task" | "note" | "document";
   id: string;

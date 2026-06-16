@@ -3,19 +3,36 @@ import {
   uploadDocuments,
   listDocuments,
   documentFileUrl,
+  extractDocument,
   type DocumentRecord,
   type UploadItem,
+  type Extraction,
 } from "./api";
-import { ddMMMyyyy } from "./format";
+import ConfirmScreen from "./ConfirmScreen";
 
 // Intake panel: upload scanned letters (FR-1/2/3), see per-file status, open
 // the stored original (FR-27). Extraction is Phase 2 — here we only capture.
-export default function DocumentsPanel() {
+export default function DocumentsPanel({ onConfirmed }: { onConfirmed?: () => void }) {
   const [docs, setDocs] = useState<DocumentRecord[]>([]);
   const [results, setResults] = useState<UploadItem[]>([]);
   const [pending, setPending] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [extracting, setExtracting] = useState<string | null>(null);
+  const [extraction, setExtraction] = useState<Extraction | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  async function runExtract(id: string) {
+    setExtracting(id);
+    setMsg(null);
+    try {
+      setExtraction(await extractDocument(id));
+    } catch (e) {
+      setMsg(String(e));
+    } finally {
+      setExtracting(null);
+    }
+  }
 
   const reload = () => {
     listDocuments().then(setDocs).catch(() => setDocs([]));
@@ -72,12 +89,27 @@ export default function DocumentsPanel() {
       <div style={{ marginTop: 10 }}>
         {docs.length === 0 && <div style={{ color: "#888" }}>No documents yet.</div>}
         {docs.map((d) => (
-          <div key={d.id} style={{ padding: "3px 0" }}>
-            📄 <a href={documentFileUrl(d.id)} target="_blank" rel="noreferrer">{d.filename}</a>
-            <span style={{ color: "#666" }}> · {d.page_count}p · {ddMMMyyyy(d.created_at)}</span>
+          <div key={d.id} style={{ padding: "3px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>
+              📄 <a href={documentFileUrl(d.id)} target="_blank" rel="noreferrer">{d.filename}</a>
+              <span style={{ color: "#666" }}> · {d.page_count}p</span>
+            </span>
+            <button onClick={() => runExtract(d.id)} disabled={extracting === d.id} style={{ fontSize: 11 }}>
+              {extracting === d.id ? "Reading…" : "Extract"}
+            </button>
           </div>
         ))}
       </div>
+
+      {msg && <div style={{ marginTop: 8, fontSize: 12, color: "#a60" }}>{msg}</div>}
+
+      {extraction && (
+        <ConfirmScreen
+          extraction={extraction}
+          onClose={() => setExtraction(null)}
+          onConfirmed={(m) => { setExtraction(null); setMsg(m); reload(); onConfirmed?.(); }}
+        />
+      )}
     </section>
   );
 }
