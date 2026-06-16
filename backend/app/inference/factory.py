@@ -23,8 +23,10 @@ def build_extraction_client(settings: Settings) -> ExtractionClient | None:
     cfg = settings.extraction
     if not cfg.enabled:
         return None
-    # Currently one OpenAI-compatible VLM backend; branch by a future
-    # cfg.engine here when a second backend type is added.
+    if cfg.engine == "mock":
+        from app.inference.mock import MockExtractionClient
+
+        return MockExtractionClient(cfg)
     return OpenAIVisionExtractionClient(cfg)
 
 

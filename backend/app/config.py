@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ExtractionConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="INFERENCE_EXTRACTION_")
     enabled: bool = True
+    engine: str = "openai-vl"  # "openai-vl" (vLLM) | "mock" (GPU-free testing)
     base_url: str = "http://vllm:8000/v1"
     model: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     api_key: str = "not-needed-local"

@@ -13,7 +13,6 @@ from openai import AsyncOpenAI
 from app.config import ExtractionConfig
 from app.inference.base import (
     ExtractionClient,
-    ExtractionField,
     ExtractionResult,
     InferenceUnavailable,
 )
@@ -61,14 +60,10 @@ class OpenAIVisionExtractionClient(ExtractionClient):
 
         data = json.loads(resp.choices[0].message.content or "{}")
         full_text = data.pop("full_text", "")
-        fields = {
-            k: ExtractionField(
-                value=v.get("value") if isinstance(v, dict) else v,
-                confidence=float(v.get("confidence", 0.0)) if isinstance(v, dict) else 0.0,
-            )
-            for k, v in data.items()
-        }
-        return ExtractionResult(fields=fields, full_text=full_text, raw=data)
+        # Guided decoding guarantees each field is {value, confidence,
+        # source_text, page}; pass the dicts straight through to validation.
+        fields = {k: v for k, v in data.items() if isinstance(v, dict)}
+        return ExtractionResult(fields=fields, full_text=full_text)
 
     async def healthy(self) -> bool:
         try:

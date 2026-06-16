@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import logging
 
-from app.api import documents, events, notes, status, tasks, trash
+from app.api import documents, events, extractions, notes, status, tasks, trash
 from app.config import get_settings
 from app.db.database import init_db
 from app.inference.factory import (
@@ -60,3 +60,4 @@ app.include_router(tasks.router)
 app.include_router(documents.router)
 app.include_router(notes.router)
 app.include_router(trash.router)
+app.include_router(extractions.router)

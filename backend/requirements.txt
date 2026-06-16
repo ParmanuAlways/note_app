@@ -23,8 +23,9 @@ openai==1.59.6
 # --- Recurrence (RRULE, RFC 5545) ---
 python-dateutil==2.9.0.post0
 
-# --- Document handling (PDF page count) ---
+# --- Document handling (PDF page count + page rendering) ---
 pypdf==5.1.0
+pymupdf==1.27.2.3
 
 # --- Notes version history (git-style) ---
 GitPython==3.1.43

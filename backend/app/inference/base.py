@@ -9,7 +9,7 @@ client raises `InferenceUnavailable`; callers degrade gracefully (NFR-9).
 from __future__ import annotations
 
 import abc
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, AsyncIterator
 
 
@@ -22,22 +22,18 @@ class InferenceUnavailable(RuntimeError):
 
 
 @dataclass
-class ExtractionField:
-    """One extracted value plus its self-reported confidence (FR-10).
+class ExtractionResult:
+    """Raw model output, one entry per field:
+        {field_name: {value, confidence, source_text, page}}
+    plus the full read-back text (FR-9). Kept as plain dicts so the validation
+    layer (FR-11) can process it directly.
 
-    NOTE: VLMs do not produce calibrated confidence. `confidence` is a
-    review hint only; the confirm step (FR-14) is the real safety net.
+    NOTE: VLMs do not produce calibrated confidence — it's a review hint only;
+    the confirm step (FR-14) is the real safety net.
     """
 
-    value: Any
-    confidence: float
-
-
-@dataclass
-class ExtractionResult:
-    fields: dict[str, ExtractionField]
-    full_text: str  # complete text the model read, for search (FR-9)
-    raw: dict[str, Any] = field(default_factory=dict)
+    fields: dict[str, dict[str, Any]]
+    full_text: str
 
 
 @dataclass
