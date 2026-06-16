@@ -19,3 +19,38 @@ export async function getStatus(): Promise<SystemStatus> {
   if (!res.ok) throw new Error(`status ${res.status}`);
   return res.json();
 }
+
+export interface EventRecord {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  venue: string | null;
+  attendees: string | null;
+  rrule: string | null;
+  classification: string | null;
+}
+
+export interface EventInput {
+  title: string;
+  starts_at: string;
+  ends_at?: string | null;
+  venue?: string | null;
+  attendees?: string | null;
+}
+
+export async function listEvents(): Promise<EventRecord[]> {
+  const res = await fetch(`${BASE}/events`);
+  if (!res.ok) throw new Error(`events ${res.status}`);
+  return res.json();
+}
+
+export async function createEvent(input: EventInput): Promise<EventRecord> {
+  const res = await fetch(`${BASE}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`create failed ${res.status}`);
+  return res.json();
+}

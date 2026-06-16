@@ -53,6 +53,10 @@ class Settings(BaseSettings):
 
     storage_root: str = "/data/storage"
 
+    # Optional full override (e.g. sqlite for local dev). When unset, the URL
+    # is assembled from the postgres_* parts below (prod / compose).
+    database_url_override: str | None = None
+
     keycloak_url: str = "http://keycloak:8080"
     keycloak_realm: str = "notes"
     keycloak_client_id: str = "notes-frontend"
@@ -63,6 +67,8 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        if self.database_url_override:
+            return self.database_url_override
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

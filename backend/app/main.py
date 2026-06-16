@@ -12,13 +12,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import status
+import logging
+
+from app.api import events, status
 from app.config import get_settings
+from app.db.database import init_db
 from app.inference.factory import (
     build_embedding_client,
     build_extraction_client,
     build_transcription_client,
 )
+
+logger = logging.getLogger("app")
 
 
 @asynccontextmanager
@@ -28,6 +33,12 @@ async def lifespan(app: FastAPI):
     app.state.extraction_client = build_extraction_client(settings)
     app.state.transcription_client = build_transcription_client(settings)
     app.state.embedding_client = build_embedding_client(settings)
+    # The DB is core infra (unlike inference, NFR-9). If it's down we log and
+    # still boot, so /health and the status page stay available for diagnosis.
+    try:
+        init_db()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("init_db failed (DB unreachable?): %s", exc)
     yield
 
 
@@ -44,3 +55,4 @@ app.add_middleware(
 )
 
 app.include_router(status.router)
+app.include_router(events.router)

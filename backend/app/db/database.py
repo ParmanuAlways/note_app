@@ -18,6 +18,14 @@ class Base(DeclarativeBase):
     pass
 
 
+def init_db() -> None:
+    """Create tables if missing. Dev convenience; prod uses Alembic migrations.
+    Importing models registers them on Base.metadata before create_all."""
+    from app.db import models  # noqa: F401
+
+    Base.metadata.create_all(bind=engine)
+
+
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
