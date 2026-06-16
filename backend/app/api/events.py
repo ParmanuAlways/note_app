@@ -6,6 +6,7 @@ This is the AI-free backbone: it works with no GPU and no models (NFR-9).
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
@@ -14,8 +15,9 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_owner
 from app.db.database import get_db
 from app.db.models import AuditLog, Event
-from app.schemas.event import EventCreate, EventRead, EventUpdate
+from app.schemas.event import EventCreate, EventRead, EventUpdate, OccurrenceRead
 from app.services import audit
+from app.services.recurrence import occurrences_in_range
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -47,19 +49,22 @@ def create_event(
     return ev
 
 
-@router.get("", response_model=list[EventRead])
+@router.get("", response_model=list[OccurrenceRead])
 def list_events(
     db: Session = Depends(get_db),
     owner_id: str = Depends(get_current_owner),
     start: datetime | None = Query(None, description="range start (inclusive)"),
     end: datetime | None = Query(None, description="range end (exclusive)"),
-) -> list[Event]:
+) -> list[dict]:
+    # Recurring masters are expanded on read (FR-20), so we can't filter by
+    # starts_at in SQL — a weekly series starting in January still has
+    # occurrences in June. Fetch all, expand each within the window.
     stmt = select(Event).where(Event.owner_id == owner_id, Event.deleted_at.is_(None))
-    if start is not None:
-        stmt = stmt.where(Event.starts_at >= start)
-    if end is not None:
-        stmt = stmt.where(Event.starts_at < end)
-    return list(db.scalars(stmt.order_by(Event.starts_at)))
+    occ: list[dict] = []
+    for ev in db.scalars(stmt):
+        occ.extend(occurrences_in_range(ev, start, end))
+    occ.sort(key=lambda o: o["occurrence_start"])
+    return occ
 
 
 @router.get("/trash", response_model=list[EventRead])
@@ -88,16 +93,56 @@ def update_event(
     payload: EventUpdate,
     db: Session = Depends(get_db),
     owner_id: str = Depends(get_current_owner),
+    scope: Literal["series", "occurrence"] = Query(
+        "series", description="edit the whole series or just one occurrence"
+    ),
+    occurrence: datetime | None = Query(
+        None, description="the occurrence start to override (scope=occurrence)"
+    ),
 ) -> Event:
     ev = _get_owned(db, owner_id, event_id)
     changes = payload.model_dump(exclude_unset=True)
+
+    if scope == "occurrence":
+        # Split one instance off the series (FR-20): exclude it from the master
+        # and create a standalone override carrying the edits.
+        if occurrence is None:
+            raise HTTPException(400, "occurrence is required when scope=occurrence")
+        if not ev.rrule:
+            raise HTTPException(400, "event is not recurring")
+        ev.exdates = list(ev.exdates or []) + [occurrence.isoformat()]
+        duration = (ev.ends_at - ev.starts_at) if ev.ends_at else None
+        override = Event(
+            owner_id=owner_id,
+            title=changes.get("title", ev.title),
+            starts_at=changes.get("starts_at", occurrence),
+            ends_at=changes.get(
+                "ends_at", (occurrence + duration) if duration else None
+            ),
+            venue=changes.get("venue", ev.venue),
+            attendees=changes.get("attendees", ev.attendees),
+            classification=changes.get("classification", ev.classification),
+            rrule=None,
+            recurrence_parent_id=ev.id,
+        )
+        db.add(override)
+        db.flush()
+        audit.record(
+            db, owner_id=owner_id, item_type="event", item_id=ev.id,
+            action="occurrence_edited",
+            detail={"occurrence": occurrence.isoformat(), "override_id": override.id},
+        )
+        db.commit()
+        db.refresh(override)
+        return override
+
     rescheduled = "starts_at" in changes and changes["starts_at"] != ev.starts_at
     for field, value in changes.items():
         setattr(ev, field, value)
     audit.record(
         db, owner_id=owner_id, item_type="event", item_id=ev.id,
         action="rescheduled" if rescheduled else "edited",
-        detail={"fields": sorted(changes.keys())},
+        detail={"fields": sorted(changes.keys()), "scope": "series"},
     )
     db.commit()
     db.refresh(ev)
@@ -109,9 +154,26 @@ def delete_event(
     event_id: str,
     db: Session = Depends(get_db),
     owner_id: str = Depends(get_current_owner),
+    scope: Literal["series", "occurrence"] = Query("series"),
+    occurrence: datetime | None = Query(None),
 ) -> Response:
-    # Soft delete -> trash (FR-19). No hard delete from the UI.
     ev = _get_owned(db, owner_id, event_id)
+
+    if scope == "occurrence":
+        # Remove a single instance from the series without touching the rest.
+        if occurrence is None:
+            raise HTTPException(400, "occurrence is required when scope=occurrence")
+        if not ev.rrule:
+            raise HTTPException(400, "event is not recurring")
+        ev.exdates = list(ev.exdates or []) + [occurrence.isoformat()]
+        audit.record(
+            db, owner_id=owner_id, item_type="event", item_id=ev.id,
+            action="occurrence_deleted", detail={"occurrence": occurrence.isoformat()},
+        )
+        db.commit()
+        return Response(status_code=204)
+
+    # Soft delete the whole series -> trash (FR-19). No hard delete from the UI.
     ev.deleted_at = datetime.now(tz=ev.starts_at.tzinfo)
     audit.record(db, owner_id=owner_id, item_type="event", item_id=ev.id, action="deleted")
     db.commit()

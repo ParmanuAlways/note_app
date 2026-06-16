@@ -110,6 +110,12 @@ class Event(Base, OwnerMixin, TimestampMixin):
     venue: Mapped[str | None] = mapped_column(String, nullable=True)
     attendees: Mapped[str | None] = mapped_column(Text, nullable=True)  # text metadata only (FR-17)
     rrule: Mapped[str | None] = mapped_column(String, nullable=True)  # RFC 5545 recurrence (FR-20)
+    # Occurrences removed or overridden on a series (ISO datetime strings). Lets
+    # "this occurrence" edits/deletes punch a hole in the series (FR-20).
+    exdates: Mapped[list | None] = mapped_column(JSON, default=list)
+    # Set on a detached override event — the single, modified instance split off
+    # from its parent series.
+    recurrence_parent_id: Mapped[str | None] = mapped_column(ForeignKey("events.id"), nullable=True)
     classification: Mapped[str | None] = mapped_column(String, nullable=True)
     source_document_id: Mapped[str | None] = mapped_column(ForeignKey("documents.id"), nullable=True)
     source_note_id: Mapped[str | None] = mapped_column(ForeignKey("notes.id"), nullable=True)

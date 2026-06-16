@@ -46,3 +46,21 @@ class EventRead(BaseModel):
     classification: str | None
     source_document_id: str | None
     source_note_id: str | None
+
+
+class OccurrenceRead(BaseModel):
+    """One concrete instance produced by expanding a (possibly recurring) event.
+
+    `event_id` is the master/series row; `occurrence_start` identifies the
+    specific instance for per-occurrence edits/deletes (FR-20)."""
+
+    event_id: str
+    title: str
+    occurrence_start: datetime
+    occurrence_end: datetime | None
+    venue: str | None
+    attendees: str | None
+    classification: str | None
+    rrule: str | None
+    is_recurring: bool
+    is_override: bool

@@ -20,15 +20,18 @@ export async function getStatus(): Promise<SystemStatus> {
   return res.json();
 }
 
-export interface EventRecord {
-  id: string;
+// One concrete instance returned by the backend after expanding recurrence.
+export interface Occurrence {
+  event_id: string;
   title: string;
-  starts_at: string;
-  ends_at: string | null;
+  occurrence_start: string;
+  occurrence_end: string | null;
   venue: string | null;
   attendees: string | null;
-  rrule: string | null;
   classification: string | null;
+  rrule: string | null;
+  is_recurring: boolean;
+  is_override: boolean;
 }
 
 export interface EventInput {
@@ -37,15 +40,16 @@ export interface EventInput {
   ends_at?: string | null;
   venue?: string | null;
   attendees?: string | null;
+  rrule?: string | null;
 }
 
-export async function listEvents(): Promise<EventRecord[]> {
-  const res = await fetch(`${BASE}/events`);
+export async function listEvents(start: string, end: string): Promise<Occurrence[]> {
+  const res = await fetch(`${BASE}/events?start=${start}&end=${end}`);
   if (!res.ok) throw new Error(`events ${res.status}`);
   return res.json();
 }
 
-export async function createEvent(input: EventInput): Promise<EventRecord> {
+export async function createEvent(input: EventInput): Promise<unknown> {
   const res = await fetch(`${BASE}/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -53,4 +57,16 @@ export async function createEvent(input: EventInput): Promise<EventRecord> {
   });
   if (!res.ok) throw new Error(`create failed ${res.status}`);
   return res.json();
+}
+
+// scope=series deletes the whole series; scope=occurrence needs the instance start.
+export async function deleteEvent(
+  eventId: string,
+  scope: "series" | "occurrence",
+  occurrence?: string,
+): Promise<void> {
+  const q = new URLSearchParams({ scope });
+  if (occurrence) q.set("occurrence", occurrence);
+  const res = await fetch(`${BASE}/events/${eventId}?${q}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`delete failed ${res.status}`);
 }
