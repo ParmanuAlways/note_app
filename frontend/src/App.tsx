@@ -5,6 +5,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import multiMonthPlugin from "@fullcalendar/multimonth";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg, DatesSetArg } from "@fullcalendar/core";
+import TasksPanel from "./TasksPanel";
 import {
   getStatus,
   listEvents,
@@ -197,23 +198,28 @@ export default function App() {
         </div>
       </header>
 
-      <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, multiMonthPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        headerToolbar={{ left: "prev,next today", center: "title", right: "timeGridDay,timeGridWeek,dayGridMonth,multiMonthYear" }}
-        titleFormat={{ year: "numeric", month: "short" }}
-        dayHeaderFormat={{ weekday: "short" }}
-        height="auto"
-        datesSet={onDatesSet}
-        eventClick={onEventClick}
-        dateClick={(arg) => setForm({ ...EMPTY, date: arg.dateStr.slice(0, 10) })}
-        events={occ.map((o) => ({
-          title: o.title + (o.is_override ? " *" : ""),
-          start: o.occurrence_start,
-          end: o.occurrence_end ?? undefined,
-          extendedProps: { eventId: o.event_id, start: o.occurrence_start, recurring: o.is_recurring },
-        }))}
-      />
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, multiMonthPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            headerToolbar={{ left: "prev,next today", center: "title", right: "timeGridDay,timeGridWeek,dayGridMonth,multiMonthYear" }}
+            titleFormat={{ year: "numeric", month: "short" }}
+            dayHeaderFormat={{ weekday: "short" }}
+            height="auto"
+            datesSet={onDatesSet}
+            eventClick={onEventClick}
+            dateClick={(arg) => setForm({ ...EMPTY, date: arg.dateStr.slice(0, 10) })}
+            events={occ.map((o) => ({
+              title: o.title + (o.is_override ? " *" : ""),
+              start: o.occurrence_start,
+              end: o.occurrence_end ?? undefined,
+              extendedProps: { eventId: o.event_id, start: o.occurrence_start, recurring: o.is_recurring },
+            }))}
+          />
+        </div>
+        <TasksPanel />
+      </div>
 
       {form && <NewEventForm initial={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); reload(); }} />}
       {toDelete && <DeleteDialog occ={toDelete} onClose={() => setToDelete(null)} onDone={() => { setToDelete(null); reload(); }} />}

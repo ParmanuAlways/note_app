@@ -59,6 +59,54 @@ export async function createEvent(input: EventInput): Promise<unknown> {
   return res.json();
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  status: "open" | "done";
+  due_at: string | null;
+  reply_by: string | null;
+}
+
+export interface SuspenseItem extends Task {
+  overdue: boolean;
+}
+
+export async function listTasks(status?: "open" | "done"): Promise<Task[]> {
+  const q = status ? `?status=${status}` : "";
+  const res = await fetch(`${BASE}/tasks${q}`);
+  if (!res.ok) throw new Error(`tasks ${res.status}`);
+  return res.json();
+}
+
+export async function listSuspense(): Promise<SuspenseItem[]> {
+  const res = await fetch(`${BASE}/tasks/suspense`);
+  if (!res.ok) throw new Error(`suspense ${res.status}`);
+  return res.json();
+}
+
+export async function createTask(input: {
+  title: string;
+  due_at?: string | null;
+  reply_by?: string | null;
+}): Promise<Task> {
+  const res = await fetch(`${BASE}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`create task failed ${res.status}`);
+  return res.json();
+}
+
+export async function setTaskStatus(id: string, status: "open" | "done"): Promise<void> {
+  const res = await fetch(`${BASE}/tasks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error(`update task failed ${res.status}`);
+}
+
 // scope=series deletes the whole series; scope=occurrence needs the instance start.
 export async function deleteEvent(
   eventId: string,
