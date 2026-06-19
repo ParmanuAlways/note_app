@@ -37,47 +37,42 @@ export default function TasksPanel() {
   };
 
   return (
-    <aside style={{ width: 300, flexShrink: 0, fontSize: 14 }}>
-      <section style={{ marginBottom: 20 }}>
-        <h3 style={{ margin: "0 0 8px" }}>Pending replies</h3>
-        {suspense.length === 0 && <div style={{ color: "#888" }}>Nothing due.</div>}
+    <div className="card">
+      <div style={{ marginBottom: 16 }}>
+        <div className="panel-head"><h3>⏰ Pending replies</h3></div>
+        {suspense.length === 0 && <div className="empty">Nothing due.</div>}
         {suspense.map((t) => (
-          <div key={t.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-            <span>
-              <input type="checkbox" onChange={() => done(t.id)} />{" "}
-              {t.title}
-            </span>
-            <span style={{ color: t.overdue ? "#b00" : "#666", whiteSpace: "nowrap" }}>
+          <div key={t.id} className="row">
+            <label style={{ display: "flex", gap: 7, alignItems: "center", fontWeight: 400, color: "var(--text)" }}>
+              <input type="checkbox" style={{ width: "auto" }} onChange={() => done(t.id)} /> {t.title}
+            </label>
+            <span style={{ color: t.overdue ? "var(--danger)" : "var(--muted)", whiteSpace: "nowrap", fontSize: 12, fontWeight: t.overdue ? 600 : 400 }}>
               {t.reply_by ? ddMMMyyyy(t.reply_by) : ""}{t.overdue ? " ⚠" : ""}
             </span>
           </div>
         ))}
-      </section>
+      </div>
 
-      <section>
-        <h3 style={{ margin: "0 0 8px" }}>Open tasks</h3>
-        {open.length === 0 && <div style={{ color: "#888" }}>No open tasks.</div>}
+      <div>
+        <div className="panel-head"><h3>✅ Open tasks</h3></div>
+        {open.length === 0 && <div className="empty">No open tasks.</div>}
         {open.map((t) => (
-          <div key={t.id} style={{ padding: "4px 0" }}>
-            <input type="checkbox" onChange={() => done(t.id)} /> {t.title}
-            {t.due_at && <span style={{ color: "#666" }}> — {ddMMMyyyy(t.due_at)}</span>}
+          <div key={t.id} className="row">
+            <label style={{ display: "flex", gap: 7, alignItems: "center", fontWeight: 400, color: "var(--text)" }}>
+              <input type="checkbox" style={{ width: "auto" }} onChange={() => done(t.id)} /> {t.title}
+            </label>
+            {t.due_at && <span className="faint" style={{ fontSize: 12 }}>{ddMMMyyyy(t.due_at)}</span>}
           </div>
         ))}
 
-        <form onSubmit={add} style={{ marginTop: 10, display: "grid", gap: 6 }}>
-          <input
-            placeholder="New task…"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{ padding: "6px 8px" }}
-          />
-          <label style={{ fontSize: 12, color: "#666" }}>
-            Reply-by (optional)
-            <input type="date" value={replyBy} onChange={(e) => setReplyBy(e.target.value)} style={{ width: "100%", padding: "4px 6px" }} />
+        <form onSubmit={add} style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <input placeholder="New task…" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label>Reply-by (optional)
+            <input type="date" value={replyBy} onChange={(e) => setReplyBy(e.target.value)} style={{ marginTop: 3 }} />
           </label>
-          <button type="submit" disabled={!title}>Add task</button>
+          <button className="primary" type="submit" disabled={!title}>Add task</button>
         </form>
-      </section>
-    </aside>
+      </div>
+    </div>
   );
 }

@@ -60,48 +60,49 @@ export default function DocumentsPanel({ onConfirmed }: { onConfirmed?: () => vo
   const dupes = results.filter((r) => r.status === "duplicate");
 
   return (
-    <section style={{ marginBottom: 20, fontSize: 14 }}>
-      <h3 style={{ margin: "0 0 8px" }}>Documents</h3>
+    <div className="card">
+      <div className="panel-head"><h3>📄 Documents</h3></div>
 
-      <input ref={fileInput} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff" onChange={onPick} style={{ fontSize: 12 }} />
-      <button disabled={busy || pending.length === 0} onClick={() => send(pending, false)} style={{ marginTop: 6 }}>
-        {busy ? "Uploading…" : `Upload ${pending.length || ""}`}
-      </button>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input ref={fileInput} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff" onChange={onPick} style={{ fontSize: 12, padding: 5 }} />
+        <button className="primary sm" disabled={busy || pending.length === 0} onClick={() => send(pending, false)} style={{ whiteSpace: "nowrap" }}>
+          {busy ? "Uploading…" : `Upload ${pending.length || ""}`}
+        </button>
+      </div>
 
       {results.length > 0 && (
-        <div style={{ marginTop: 8, fontSize: 12 }}>
+        <div style={{ marginTop: 10, fontSize: 12 }}>
           {results.map((r, i) => (
-            <div key={i} style={{ color: r.status === "uploaded" ? "#181" : r.status === "duplicate" ? "#a60" : "#b00" }}>
+            <div key={i} style={{ color: r.status === "uploaded" ? "var(--success)" : r.status === "duplicate" ? "var(--warn)" : "var(--danger)", padding: "2px 0" }}>
               {r.status === "uploaded" ? "✓" : r.status === "duplicate" ? "⚠" : "✗"} {r.filename}
               {r.reason ? ` — ${r.reason}` : ""}
               {r.status === "duplicate" ? " — already uploaded" : ""}
             </div>
           ))}
           {dupes.length > 0 && (
-            // FR-3: a likely duplicate prompts — proceed anyway, or not.
-            <button style={{ marginTop: 6 }} disabled={busy} onClick={() => send(pending, true)}>
+            <button className="sm" style={{ marginTop: 6 }} disabled={busy} onClick={() => send(pending, true)}>
               Upload anyway ({dupes.length} duplicate)
             </button>
           )}
         </div>
       )}
 
-      <div style={{ marginTop: 10 }}>
-        {docs.length === 0 && <div style={{ color: "#888" }}>No documents yet.</div>}
+      <div style={{ marginTop: 12 }}>
+        {docs.length === 0 && <div className="empty">No documents yet.</div>}
         {docs.map((d) => (
-          <div key={d.id} style={{ padding: "3px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>
+          <div key={d.id} className="row">
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               📄 <a href={documentFileUrl(d.id)} target="_blank" rel="noreferrer">{d.filename}</a>
-              <span style={{ color: "#666" }}> · {d.page_count}p</span>
+              <span className="faint"> · {d.page_count}p</span>
             </span>
-            <button onClick={() => runExtract(d.id)} disabled={extracting === d.id} style={{ fontSize: 11 }}>
-              {extracting === d.id ? "Reading…" : "Extract"}
+            <button className="sm" onClick={() => runExtract(d.id)} disabled={extracting === d.id}>
+              {extracting === d.id ? "Reading…" : "✨ Extract"}
             </button>
           </div>
         ))}
       </div>
 
-      {msg && <div style={{ marginTop: 8, fontSize: 12, color: "#a60" }}>{msg}</div>}
+      {msg && <div style={{ marginTop: 8, fontSize: 12, color: "var(--warn)" }}>{msg}</div>}
 
       {extraction && (
         <ConfirmScreen
@@ -110,6 +111,6 @@ export default function DocumentsPanel({ onConfirmed }: { onConfirmed?: () => vo
           onConfirmed={(m) => { setExtraction(null); setMsg(m); reload(); onConfirmed?.(); }}
         />
       )}
-    </section>
+    </div>
   );
 }

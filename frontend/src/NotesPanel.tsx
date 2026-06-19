@@ -24,16 +24,16 @@ export default function NotesPanel() {
   useEffect(reload, []);
 
   return (
-    <section style={{ marginBottom: 20, fontSize: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ margin: "0 0 8px" }}>Notes</h3>
-        <button onClick={() => setEditing("new")}>+ Note</button>
+    <div className="card">
+      <div className="panel-head">
+        <h3>📝 Notes</h3>
+        <button className="sm" onClick={() => setEditing("new")}>+ Note</button>
       </div>
-      {notes.length === 0 && <div style={{ color: "#888" }}>No notes yet.</div>}
+      {notes.length === 0 && <div className="empty">No notes yet.</div>}
       {notes.map((n) => (
-        <div key={n.id} style={{ padding: "3px 0" }}>
-          📝 <a href="#" onClick={(e) => { e.preventDefault(); setEditing(n); }}>{n.title}</a>
-          <span style={{ color: "#666" }}> · {ddMMMyyyy(n.updated_at)}</span>
+        <div key={n.id} className="row">
+          <a href="#" onClick={(e) => { e.preventDefault(); setEditing(n); }}>{n.title}</a>
+          <span className="faint" style={{ fontSize: 12 }}>{ddMMMyyyy(n.updated_at)}</span>
         </div>
       ))}
       {editing && (
@@ -43,7 +43,7 @@ export default function NotesPanel() {
           onSaved={() => { setEditing(null); reload(); }}
         />
       )}
-    </section>
+    </div>
   );
 }
 
@@ -81,7 +81,7 @@ function NoteEditor({ note, onClose, onSaved }: { note: NoteMeta | null; onClose
           <span style={{ fontSize: 12, color: "#666" }}>{note ? `${versions.length} version(s)` : "new note"}</span>
           <span>
             <button onClick={onClose} style={{ marginRight: 8 }}>Cancel</button>
-            <button onClick={save} disabled={busy || !title}>{busy ? "Saving…" : "Save"}</button>
+            <button className="primary" onClick={save} disabled={busy || !title}>{busy ? "Saving…" : "Save"}</button>
           </span>
         </div>
 

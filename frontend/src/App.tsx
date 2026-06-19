@@ -25,15 +25,15 @@ function StatusBadge() {
   useEffect(() => {
     getStatus().then(setStatus).catch((e) => setErr(String(e)));
   }, []);
-  if (err) return <span style={{ color: "#b00" }}>backend unreachable</span>;
-  if (!status) return <span>checking…</span>;
-  const dot = (s: string) => (s === "ready" ? "🟢" : s === "disabled" ? "⚪" : "🔴");
+  if (err) return <span className="pill"><span className="dot bad" /> backend offline</span>;
+  if (!status) return <span className="pill">checking…</span>;
+  const cls = (s: string) => (s === "ready" ? "ok" : s === "disabled" ? "off" : "bad");
   return (
-    <span style={{ fontSize: 13 }}>
-      {dot(status.inference.extraction)} extract&nbsp;
-      {dot(status.inference.transcription)} voice&nbsp;
-      {dot(status.inference.embedding)} search&nbsp; | &nbsp;
-      {status.disk.free_gb} GB free
+    <span className="pill" title="Local AI services">
+      <span className={`dot ${cls(status.inference.extraction)}`} /> extract
+      <span className={`dot ${cls(status.inference.transcription)}`} style={{ marginLeft: 6 }} /> voice
+      <span className={`dot ${cls(status.inference.embedding)}`} style={{ marginLeft: 6 }} /> search
+      <span className="faint" style={{ marginLeft: 6 }}>· {status.disk.free_gb} GB free</span>
     </span>
   );
 }
@@ -117,7 +117,7 @@ function NewEventForm({ initial, onSaved, onClose }: { initial: FormState; onSav
         {err && <div style={{ color: "#b00", fontSize: 13 }}>{err}</div>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
           <button type="button" onClick={onClose}>Cancel</button>
-          <button type="submit" disabled={busy || !form.title || !form.date}>{busy ? "Saving…" : "Save"}</button>
+          <button className="primary" type="submit" disabled={busy || !form.title || !form.date}>{busy ? "Saving…" : "Save"}</button>
         </div>
       </form>
     </Modal>
@@ -142,14 +142,14 @@ function DeleteDialog({ occ, onDone, onClose }: { occ: ClickedOcc; onDone: () =>
         <h3 style={{ margin: 0 }}>{occ.title}</h3>
         {occ.recurring ? (
           <>
-            <p style={{ margin: 0, fontSize: 14 }}>This is a recurring event.</p>
-            <button onClick={() => remove("occurrence")}>Delete this occurrence</button>
-            <button onClick={() => remove("series")}>Delete entire series</button>
+            <p className="muted" style={{ margin: 0 }}>This is a recurring event.</p>
+            <button className="danger" onClick={() => remove("occurrence")}>Delete this occurrence</button>
+            <button className="danger" onClick={() => remove("series")}>Delete entire series</button>
           </>
         ) : (
-          <button onClick={() => remove("series")}>Delete event</button>
+          <button className="danger" onClick={() => remove("series")}>Delete event</button>
         )}
-        <button onClick={onClose}>Cancel</button>
+        <button className="ghost" onClick={onClose}>Cancel</button>
       </div>
     </Modal>
   );
@@ -182,18 +182,21 @@ export default function App() {
   };
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", padding: 16 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>AI Notes &amp; Scheduler</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+    <div>
+      <header className="app-bar">
+        <div className="brand">
+          <span className="logo">📅</span>
+          AI Notes &amp; Scheduler
+        </div>
+        <div className="bar-actions">
           <StatusBadge />
           <button onClick={() => setShowTrash(true)}>🗑 Trash</button>
-          <button onClick={() => setForm({ ...EMPTY })}>+ New event</button>
+          <button className="primary" onClick={() => setForm({ ...EMPTY })}>+ New event</button>
         </div>
       </header>
 
-      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="layout">
+        <div className="main-col card">
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, multiMonthPlugin, interactionPlugin]}
             initialView="dayGridMonth"
@@ -212,7 +215,7 @@ export default function App() {
             }))}
           />
         </div>
-        <div style={{ width: 300, flexShrink: 0 }} key={sidebarKey}>
+        <div className="sidebar" key={sidebarKey}>
           <DocumentsPanel onConfirmed={() => reload()} />
           <NotesPanel />
           <TasksPanel />

@@ -117,12 +117,12 @@ export default function ConfirmScreen({ extraction, onClose, onConfirmed }: { ex
 
       {err && <div style={{ color: "#b00", fontSize: 13, marginTop: 10 }}>{err}</div>}
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-        <button onClick={() => save("none")} disabled={busy}>Dismiss (keep document)</button>
-        <span>
-          <button onClick={() => save("task")} disabled={busy} style={{ marginRight: 8 }}>Save as task</button>
-          <button onClick={() => save("event")} disabled={busy || !startsAt}>
-            {busy ? "Saving…" : "Save to calendar"}
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}>
+        <button className="ghost" onClick={() => save("none")} disabled={busy}>Dismiss (keep document)</button>
+        <span style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => save("task")} disabled={busy}>Save as task</button>
+          <button className="primary" onClick={() => save("event")} disabled={busy || !startsAt}>
+            {busy ? "Saving…" : "📅 Save to calendar"}
           </button>
         </span>
       </div>
