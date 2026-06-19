@@ -24,7 +24,7 @@ export default function NotesPanel() {
   useEffect(reload, []);
 
   return (
-    <div className="card">
+    <div className="card panel-notes">
       <div className="panel-head">
         <h3>📝 Notes</h3>
         <button className="sm" onClick={() => setEditing("new")}>+ Note</button>

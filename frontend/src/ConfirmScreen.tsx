@@ -22,12 +22,14 @@ const FIELDS: { key: string; label: string; type: "text" | "date" | "time" }[] =
   { key: "reply_by_date", label: "Reply by", type: "date" },
 ];
 
+const WARN = "var(--warn)";
+const DANGER = "var(--danger)";
 const FLAG: Record<string, [string, string]> = {
-  missing: ["not found", "#a60"],
-  low_confidence: ["low confidence", "#a60"],
-  unreadable: ["unreadable date — please enter", "#b00"],
-  implausible_past: ["date is in the past!", "#b00"],
-  overdue: ["overdue", "#a60"],
+  missing: ["not found", WARN],
+  low_confidence: ["low confidence", WARN],
+  unreadable: ["unreadable date — please enter", DANGER],
+  implausible_past: ["date is in the past!", DANGER],
+  overdue: ["overdue", WARN],
 };
 
 export default function ConfirmScreen({ extraction, onClose, onConfirmed }: { extraction: Extraction; onClose: () => void; onConfirmed: (msg: string) => void }) {
@@ -78,12 +80,12 @@ export default function ConfirmScreen({ extraction, onClose, onConfirmed }: { ex
   return (
     <Modal onClose={onClose} width={560}>
       <h3 style={{ margin: "0 0 4px" }}>Confirm extracted details</h3>
-      <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
+      <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
         Read by {extraction.model_used} · v{extraction.version} · review and correct before saving.
       </div>
 
       {conflicts.length > 0 && (
-        <div style={{ background: "#fff3f3", border: "1px solid #f0b0b0", padding: 8, borderRadius: 6, marginBottom: 12, fontSize: 13 }}>
+        <div style={{ background: "var(--danger-soft)", border: "1px solid var(--danger)", color: "var(--danger)", padding: 9, borderRadius: 8, marginBottom: 12, fontSize: 13, fontWeight: 550 }}>
           ⚠ Clashes with {conflicts.length} existing event(s): {conflicts.map((c) => c.title).join(", ")}
         </div>
       )}
@@ -93,7 +95,7 @@ export default function ConfirmScreen({ extraction, onClose, onConfirmed }: { ex
           const flags = extraction.fields[f.key]?.flags ?? [];
           const conf = extraction.fields[f.key]?.confidence ?? 0;
           const src = extraction.fields[f.key]?.source_text;
-          const worst = flags.find((fl) => FLAG[fl]?.[1] === "#b00") ?? flags[0];
+          const worst = flags.find((fl) => FLAG[fl]?.[1] === DANGER) ?? flags[0];
           const color = worst ? FLAG[worst]?.[1] : undefined;
           return (
             <div key={f.key}>
@@ -107,9 +109,9 @@ export default function ConfirmScreen({ extraction, onClose, onConfirmed }: { ex
                 type={f.type}
                 value={vals[f.key]}
                 onChange={(e) => setVals({ ...vals, [f.key]: e.target.value })}
-                style={{ width: "100%", padding: "6px 8px", boxSizing: "border-box", border: `1px solid ${color ?? "#ccc"}`, background: color ? "#fff7f7" : "#fff" }}
+                style={color ? { borderColor: color, boxShadow: `0 0 0 2px ${color}22` } : undefined}
               />
-              {src && <div style={{ fontSize: 11, color: "#999" }}>read from: “{src}”</div>}
+              {src && <div className="faint" style={{ fontSize: 11 }}>read from: “{src}”</div>}
             </div>
           );
         })}

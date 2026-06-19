@@ -166,6 +166,12 @@ export default function App() {
   const [toDelete, setToDelete] = useState<ClickedOcc | null>(null);
   const [showTrash, setShowTrash] = useState(false);
   const [sidebarKey, setSidebarKey] = useState(0); // bump to remount panels
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const reload = (r = range) => {
     if (!r) return;
@@ -189,6 +195,10 @@ export default function App() {
           AI Notes &amp; Scheduler
         </div>
         <div className="bar-actions">
+          <div className="theme-toggle" role="tablist" aria-label="Theme">
+            <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}>🌙 Dark</button>
+            <button className={theme === "vibrant" ? "active" : ""} onClick={() => setTheme("vibrant")}>🎨 Vibrant</button>
+          </div>
           <StatusBadge />
           <button onClick={() => setShowTrash(true)}>🗑 Trash</button>
           <button className="primary" onClick={() => setForm({ ...EMPTY })}>+ New event</button>

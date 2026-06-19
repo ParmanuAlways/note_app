@@ -60,7 +60,7 @@ export default function DocumentsPanel({ onConfirmed }: { onConfirmed?: () => vo
   const dupes = results.filter((r) => r.status === "duplicate");
 
   return (
-    <div className="card">
+    <div className="card panel-docs">
       <div className="panel-head"><h3>📄 Documents</h3></div>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

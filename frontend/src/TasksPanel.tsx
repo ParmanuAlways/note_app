@@ -37,7 +37,7 @@ export default function TasksPanel() {
   };
 
   return (
-    <div className="card">
+    <div className="card panel-tasks">
       <div style={{ marginBottom: 16 }}>
         <div className="panel-head"><h3>⏰ Pending replies</h3></div>
         {suspense.length === 0 && <div className="empty">Nothing due.</div>}
